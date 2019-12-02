@@ -35,7 +35,12 @@ const sharedPropertyDefinition = {
   set: noop
 }
 
+// 对象属性设置和获取代理
 export function proxy (target: Object, sourceKey: string, key: string) {
+  // 目标属性在sourceKey属性里存储
+  // 设置key属性的getter和setter去读取sourceKey里的值或更新其值
+
+  // TODO: 存疑，this在这里指代target，但实际传入的target为Comp.prototype，但发现实际组件实例没有在其prototype上发现_props属性，但是在组件实例对象发现了_props属性
   sharedPropertyDefinition.get = function proxyGetter () {
     return this[sourceKey][key]
   }
@@ -207,12 +212,15 @@ function initComputed (vm: Component, computed: Object) {
   }
 }
 
+// 定义计算属性
 export function defineComputed (
   target: any,
   key: string,
   userDef: Object | Function
 ) {
+  // 此处通过判断是否为服务端渲染来判断是否需要"缓存结果"
   const shouldCache = !isServerRendering()
+  // 判断这个计算属性是function形式还是getter setter形式
   if (typeof userDef === 'function') {
     sharedPropertyDefinition.get = shouldCache
       ? createComputedGetter(key)
@@ -226,6 +234,7 @@ export function defineComputed (
       : noop
     sharedPropertyDefinition.set = userDef.set || noop
   }
+  // 非生产环境当用户没有设置set时，当用户出现对计算属性的赋值操作时，显示警告！！！
   if (process.env.NODE_ENV !== 'production' &&
       sharedPropertyDefinition.set === noop) {
     sharedPropertyDefinition.set = function () {
@@ -235,6 +244,7 @@ export function defineComputed (
       )
     }
   }
+  // 计算属性定义
   Object.defineProperty(target, key, sharedPropertyDefinition)
 }
 
